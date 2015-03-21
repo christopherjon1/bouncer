@@ -61,18 +61,21 @@ AVFrame* OpenImage(const char* imageFileName)
   int framesNumber = 0;
   while (av_read_frame(pFormatCtx, &packet) >= 0)
   {
-      if(packet.stream_index != 0)
+      if(packet.stream_index != 0) {
 	     continue;
+      }
 
       int ret = avcodec_decode_video2(pCodecCtx, pFrame, &frameFinished, &packet);
       if (ret > 0)
       {
 	       printf("Frame is decoded, size %d\n", ret);
 	        pFrame->quality = 4;
-	         return pFrame;
+	        return pFrame;
       }
-      else
+      else {
 	     printf("Error [%d] while decoding frame: %s\n", ret, strerror(AVERROR(ret)));
+       return NULL;
+     }
 }
 
 // main entry point
@@ -96,6 +99,8 @@ int main(int argc, char** argv)
   }
   else {
     printf("Illegal File Extension\n");
+    return 1;
   }
 
+  return 0;
 }

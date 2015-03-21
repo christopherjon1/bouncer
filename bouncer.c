@@ -5,17 +5,16 @@
 #include "libavformat/avformat.h"
 #include "libavcodec/avcodec.h"
 
-AVFrame* OpenImage(const char* imageFileName)
+AVFrame* OpenImage(const char* filename)
 {
   AVFormatContext *pFormatCtx;
-
-  if(av_open_input_file(&pFormatCtx, imageFileName, NULL, 0, NULL) != 0)
+  if (avformat_open_input(&pFormatCtx,filename,NULL,NULL)!=0)
   {
-      printf("Can't open image file '%s'\n", imageFileName);
-      return NULL;
+      printf("Error in opening input file %s",filename);
+      return ERROR_CODE;
   }
 
-  dump_format(pFormatCtx, 0, imageFileName, 0);
+  av_dump_format(pFormatCtx, 0, filename, false);
 
   AVCodecContext *pCodecCtx;
 
@@ -31,7 +30,7 @@ AVFrame* OpenImage(const char* imageFileName)
   }
 
   // open codec
-  if(avcodec_open(pCodecCtx, pCodec)<0)
+  if(avcodec_open(pCodecCtx, pCodec) < 0)
   {
       printf("Could not open codec\n");
       return NULL;
@@ -69,13 +68,14 @@ AVFrame* OpenImage(const char* imageFileName)
       if (ret > 0)
       {
 	       printf("Frame is decoded, size %d\n", ret);
-	        pFrame->quality = 4;
-	        return pFrame;
+	       pFrame->quality = 4;
+	       return pFrame;
       }
       else {
 	     printf("Error [%d] while decoding frame: %s\n", ret, strerror(AVERROR(ret)));
        return NULL;
      }
+   }
 }
 
 // main entry point

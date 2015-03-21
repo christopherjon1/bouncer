@@ -10,10 +10,10 @@ AVFrame* OpenImage(const char* imageFileName)
   AVFormatContext *pFormatCtx;
 
   if(av_open_input_file(&pFormatCtx, imageFileName, NULL, 0, NULL) != 0)
-    {
+  {
       printf("Can't open image file '%s'\n", imageFileName);
       return NULL;
-    }       
+  }
 
   dump_format(pFormatCtx, 0, imageFileName, 0);
 
@@ -25,26 +25,26 @@ AVFrame* OpenImage(const char* imageFileName)
   // find the decoder for the stream
   AVCodec *pCodec = avcodec_find_decoder(pCodecCtx->codec_id);
   if (!pCodec)
-    {
+  {
       printf("Codec not found\n");
       return NULL;
-    }
+  }
 
   // open codec
   if(avcodec_open(pCodecCtx, pCodec)<0)
-    {
+  {
       printf("Could not open codec\n");
       return NULL;
-    }
+  }
 
   AVFrame *pFrame;
 
   pFrame = avcodec_alloc_frame();
   if (!pFrame)
-    {
+  {
       printf("Can't allocate memory for AVFrame\n");
       return NULL;
-    }
+  }
 
   int frameFinished;
   int numBytes;
@@ -60,24 +60,23 @@ AVFrame* OpenImage(const char* imageFileName)
 
   int framesNumber = 0;
   while (av_read_frame(pFormatCtx, &packet) >= 0)
-    {
+  {
       if(packet.stream_index != 0)
-	continue;
+	     continue;
 
       int ret = avcodec_decode_video2(pCodecCtx, pFrame, &frameFinished, &packet);
       if (ret > 0)
-        {
-	  printf("Frame is decoded, size %d\n", ret);
-	  pFrame->quality = 4;
-	  return pFrame;
-        }
+      {
+	       printf("Frame is decoded, size %d\n", ret);
+	        pFrame->quality = 4;
+	         return pFrame;
+      }
       else
-	printf("Error [%d] while decoding frame: %s\n", ret, strerror(AVERROR(ret)));
-    }
+	     printf("Error [%d] while decoding frame: %s\n", ret, strerror(AVERROR(ret)));
 }
 
 // main entry point
-int main(int argc, char** argv) 
+int main(int argc, char** argv)
 {
   // the bouncer application should take a single command line argument.
   if (argc != 2) {
@@ -86,7 +85,7 @@ int main(int argc, char** argv)
     return 1;
   }
 
-  // application should reject non-jpg files (by simply testing the extension).  
+  // application should reject non-jpg files (by simply testing the extension).
   char * filename = argv[1];
   char * ext = strrchr(filename, '.');
   if (ext) {
@@ -100,5 +99,3 @@ int main(int argc, char** argv)
   }
 
 }
-
-

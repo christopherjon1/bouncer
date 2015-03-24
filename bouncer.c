@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 #include <libavutil/frame.h>
 #include <libavutil/pixfmt.h>
 #include <libavformat/avformat.h>
@@ -199,11 +200,24 @@ AVFrame* open_image(const char* filename)
 
   return pFrameRGB;
 }
+ 
+void draw_circle(int x, int y, int r, int color) {
+  double angle, x1, y1;
+  
+  for(angle = 0; angle < 360; angle += 0.1) {
+    x1 = r * cos(angle * M_PI / 180);
+    y1 = r * sin(angle * M_PI / 180);
+
+    // draw every pixel between x and x + x1 the color
+    // 'color'
+    //draw_pixel(x + x1, y + y1, color);
+  }
+}
 
 // main entry point
 int main(int argc, char** argv)
 {
-  int i;
+  int i, x, y, r, grav;
 
   // the bouncer application should take a single command line argument.
   if (argc != 2) {
@@ -228,18 +242,30 @@ int main(int argc, char** argv)
 
   // decode the JPG image to an AVFrame
   AVFrame *frame_copy;
-  AVFrame *curr_frame;
+  //AVFrame *curr_frame;
   frame_copy = open_image(filename);
 
+  // create some color enums
+  enum {BLACK=0x000000, WHITE=0xFFFFFF};
 
   // output 300 files (into the current working directory) 
   // containing the frames of the animation. 
   char frame_name[14];
   for(i = 0; i < 300; i++) {
     snprintf(frame_name, sizeof(char) * 14, "frame%03d.mpff", i);
+    
+    // draw the circle to the frame
+    //draw_circle(x, y, r, WHITE);
 
     // save the current frame
-    save_frame(frame_name, frame_copy);    
+    save_frame(frame_name, frame_copy);
+
+    // draw the ball upward for the first 150 frames and downward
+    // for the last 150 frames.
+    //if (i < 151)
+    //  y += grav;
+    //else
+    //  y -= grav;
   }
 
   // free the RGB buffer

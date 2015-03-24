@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
+//#include <math.h>
 #include <libavutil/frame.h>
 #include <libavutil/pixfmt.h>
 #include <libavformat/avformat.h>
@@ -12,7 +12,7 @@ void save_frame(char *filename, AVFrame *pFrame) {
   FILE *f;
   AVCodec *avc;
   AVCodecContext *avctx = NULL;
-  AVPacket *pkt;
+  AVPacket pkt;
   int got_output;
 
   // get MPFF encoder
@@ -21,7 +21,7 @@ void save_frame(char *filename, AVFrame *pFrame) {
     fprintf(stderr, "MPFF codec could not be found\n");
     exit(1);
   }
-  
+
   // get the codec context
   avctx = avcodec_alloc_context3(avc);
 
@@ -36,12 +36,13 @@ void save_frame(char *filename, AVFrame *pFrame) {
   }
 
   // initialize a packet
-  av_init_packet(pkt);
-  pkt->data = NULL;
-  pkt->size = 0;
+ 
+  av_init_packet(&pkt);
+  pkt.data = NULL;
+  pkt.size = 0;
 
   // encode the data into the packet
-  avcodec_encode_video2(avctx, pkt, pFrame, &got_output);
+  avcodec_encode_video2(avctx, &pkt, pFrame, &got_output);
 
   // open file
   f = fopen(filename, "wb");
@@ -52,7 +53,7 @@ void save_frame(char *filename, AVFrame *pFrame) {
   
   if (got_output)
     // write the packet data to the output file
-    fwrite(pkt->data, 1, pkt->size, f);
+    fwrite(pkt.data, 1, pkt.size, f);
   else {
     fprintf(stderr, "save_frame: Encoder didn't get any output.");
     exit(1);
@@ -64,6 +65,9 @@ void save_frame(char *filename, AVFrame *pFrame) {
   // close and free up the codec context
   avcodec_close(avctx);
   av_free(avctx);
+
+  // free the packet
+  av_free_packet(&pkt);
 }
 
 // Ref: https://github.com/chelyaev/ffmpeg-tutorial/blob/master/tutorial01.c
@@ -201,42 +205,18 @@ AVFrame* open_image(const char* filename)
   return pFrameRGB;
 }
  
-void draw_circle(int x, int y, int r, int color) {
-//  double angle, x1, y1;
-//  
-//  for(angle = 0; angle < 360; angle += 0.1) {
-//    x1 = r * cos(angle * M_PI / 180);
-//    y1 = r * sin(angle * M_PI / 180);
+void draw_circle(AVFrame *frame, int x, int y, int r, int color) {
+  double angle, x1, y1;
+  
+  for(angle = 0; angle < 360; angle += 0.1) {
+    x1 = r * cos(angle * M_PI / 180);
+    y1 = r * sin(angle * M_PI / 180);
     
-    int x1 = r;
-    int y1 = 0;
-    int radErr = 1-x;
-    
-//    while (x1 >= y1) {
-//        putpixel( x1 + x, y1 + y , color);
-//        putpixel( y1 + x, x1 + y , color);
-//        putpixel( -x1 + x, y1 + y , color);
-//        putpixel( -y1 + x, x1 + y , color);
-//        putpixel( -x1 + x, -y1 + y , color);
-//        putpixel( -y1 + x, -x1 + y , color);
-//        putpixel( x1 + x, -y1 + y , color);
-//        putpixel( x1 + x, -x1 + y , color);
-//        y++;
-//        if (radErr<0)
-//        {
-//            radErr += 2 * y + 1;
-//        }
-//        else
-//        {
-//            x--;
-//            radErr += 2 * (y - x) + 1;
-//        }
-//    }
+  }
 
-    // draw every pixel between x and x + x1 the color
-    // 'color'
-    //draw_pixel(x + x1, y + y1, color);
-//  }
+  // draw every pixel between x and x + x1 the color
+  // 'color'
+  draw_pixel(frame, x + x1, y + y1, color);
 }
 
 // main entry point
@@ -265,10 +245,40 @@ int main(int argc, char** argv)
     return 1;
   }
 
-  // decode the JPG image to an AVFrame
-  AVFrame *frame_copy;
-  //AVFrame *curr_frame;
+  // decode the JPG image to an AVFrame and create a copy
+  const AVFrame *frame_copy;
+  AVFrame *curr_frame;
   frame_copy = open_image(filename);
+  
+  // allocate a new frame for the copy and set its members
+  curr_frame = av_frame_alloc();
+  curr_frame->width = frame_copy->width;
+  curr_frame->height = frame_copy->height;
+  curr_frame->format = frame_copy->format;
+
+  int ret;
+  ret = av_image_alloc(curr_frame->data, curr_frame->linesize, curr_frame->width, curr_frame->height,  
+                        PIX_FMT_RGB24, 32);
+
+  if (ret < 0) {
+      fprintf(stderr, "Could not allocate raw picture buffer\n");
+      exit(1);
+  }
+
+  //printf("frame_copy->width %d\n", frame_copy->width);
+  //printf("frame_copy->height %d\n", frame_copy->height);
+
+  // copy the metadata and frame data
+  av_frame_copy(curr_frame, frame_copy);
+	
+  //printf("curr_frame->width %d\n", curr_frame->width);
+  //printf("curr_frame->height %d\n", curr_frame->height);
+
+  // the ball size and location should be a percentage 
+  // of the image dimensions
+  x = curr_frame->width / 2;
+  y = curr_frame->height * curr_frame->linesize[0] / 3;
+  r = curr_frame->width * curr_frame->height * 0.1; // r = 10% of image space
 
   // create some color enums
   enum {BLACK=0x000000, WHITE=0xFFFFFF};
@@ -278,12 +288,12 @@ int main(int argc, char** argv)
   char frame_name[14];
   for(i = 0; i < 300; i++) {
     snprintf(frame_name, sizeof(char) * 14, "frame%03d.mpff", i);
-    
+
     // draw the circle to the frame
-    //draw_circle(x, y, r, WHITE);
+    draw_circle(curr_frame, x, y, r, WHITE);
 
     // save the current frame
-    save_frame(frame_name, frame_copy);
+    save_frame(frame_name, curr_frame);
 
     // draw the ball upward for the first 150 frames and downward
     // for the last 150 frames.
@@ -294,5 +304,8 @@ int main(int argc, char** argv)
   }
 
   // free the RGB buffer
+  //av_free(frame_copy);
+  //av_free(curr_frame);
+
   return 0;
 }

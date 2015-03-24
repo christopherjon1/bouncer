@@ -202,16 +202,41 @@ AVFrame* open_image(const char* filename)
 }
  
 void draw_circle(int x, int y, int r, int color) {
-  double angle, x1, y1;
-  
-  for(angle = 0; angle < 360; angle += 0.1) {
-    x1 = r * cos(angle * M_PI / 180);
-    y1 = r * sin(angle * M_PI / 180);
+//  double angle, x1, y1;
+//  
+//  for(angle = 0; angle < 360; angle += 0.1) {
+//    x1 = r * cos(angle * M_PI / 180);
+//    y1 = r * sin(angle * M_PI / 180);
+    
+    int x1 = r;
+    int y1 = 0;
+    int radErr = 1-x;
+    
+//    while (x1 >= y1) {
+//        putpixel( x1 + x, y1 + y , color);
+//        putpixel( y1 + x, x1 + y , color);
+//        putpixel( -x1 + x, y1 + y , color);
+//        putpixel( -y1 + x, x1 + y , color);
+//        putpixel( -x1 + x, -y1 + y , color);
+//        putpixel( -y1 + x, -x1 + y , color);
+//        putpixel( x1 + x, -y1 + y , color);
+//        putpixel( x1 + x, -x1 + y , color);
+//        y++;
+//        if (radErr<0)
+//        {
+//            radErr += 2 * y + 1;
+//        }
+//        else
+//        {
+//            x--;
+//            radErr += 2 * (y - x) + 1;
+//        }
+//    }
 
     // draw every pixel between x and x + x1 the color
     // 'color'
     //draw_pixel(x + x1, y + y1, color);
-  }
+//  }
 }
 
 // main entry point

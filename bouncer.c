@@ -221,12 +221,14 @@ void draw_circle(AVFrame *frame, int x0, int y0, int r) {
 		ptr = frame->data[0] + y*frame->linesize[0] + x*3; // points to red
 		int d = (x-x0)*(x-x0) + (y-y0)*(y-y0);
 	   	if (d <= r*r) {
+		  // apply linear interpolation to create a blue->white
+		  // gradient
 		  double dist = sqrt(d);
 		  double perct = dist / (double) r;
-		  printf("perct: %f\n", perct);
-		  red = perct * 255;
-		  green = perct * 255;
-		  printf("red: %d\tgreen: %d\n", red, green);
+		  red = perct * 150;
+		  green = perct * 150;
+
+		  // copy the new RGB values into the frame
 		  *ptr = red;
 		  *(ptr+1) = green;
 		  *(ptr+2) = blue;
@@ -281,22 +283,19 @@ int main(int argc, char** argv)
       exit(1);
   }
 
+  double ball_phase[] = {0.9, 0.8, 0.7, 0.6, 0.7, 0.8, 0.9};
+
   // the ball size and location should be a percentage 
   // of the image dimensions
   x0 = curr_frame->width / 2;
-  y0 = curr_frame->height / 2;
   if (curr_frame->width < curr_frame->height)
     r = curr_frame->width * 0.10;
   else
     r = curr_frame->height * 0.10;
 
-  // create some color enums
-  enum {BLACK=0x000000, WHITE=0xFFFFFF};
-
   // output 300 files (into the current working directory) 
   // containing the frames of the animation. 
   char frame_name[14];
-  grav = 2;
   for(i = 0; i < 300; i++) {
     snprintf(frame_name, sizeof(char) * 14, "frame%03d.mpff", i);
     
@@ -304,15 +303,11 @@ int main(int argc, char** argv)
     av_frame_copy(curr_frame, frame_copy);
     
     // draw the circle to the frame
+    y0 = curr_frame->height * ball_phase[i % 7];
     draw_circle(curr_frame, x0, y0, r);
 
     // save the current frame
     save_frame(frame_name, curr_frame);
-
-    if (i < 150)
-      y0 += grav;
-    else
-      y0 -= grav;
   }
 
   // free the RGB buffer

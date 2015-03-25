@@ -283,7 +283,9 @@ int main(int argc, char** argv)
       exit(1);
   }
 
-  double ball_phase[] = {0.9, 0.8, 0.7, 0.6, 0.7, 0.8, 0.9};
+  double height_mult[] = {0.9, 0.850, 0.825, 0.8, 0.750, 0.725, 0.7, 0.65, 
+			 0.625, 0.6, 0.625, 0.65, 0.7, 0.725, 0.75, 0.8, 
+			 0.825, 0.85, 0.9};
 
   // the ball size and location should be a percentage 
   // of the image dimensions
@@ -303,8 +305,8 @@ int main(int argc, char** argv)
     av_frame_copy(curr_frame, frame_copy);
     
     // draw the circle to the frame
-    int phase_size = sizeof(ball_phase) / sizeof(ball_phase[0]);
-    y0 = curr_frame->height * ball_phase[i % phase_size];
+    int phase_size = sizeof(height_mult) / sizeof(height_mult[0]);
+    y0 = curr_frame->height * height_mult[i % phase_size];
     draw_circle(curr_frame, x0, y0, r);
 
     // save the current frame

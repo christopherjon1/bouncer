@@ -303,7 +303,8 @@ int main(int argc, char** argv)
     av_frame_copy(curr_frame, frame_copy);
     
     // draw the circle to the frame
-    y0 = curr_frame->height * ball_phase[i % 7];
+    int phase_size = sizeof(ball_phase) / sizeof(ball_phase[0]);
+    y0 = curr_frame->height * ball_phase[i % phase_size];
     draw_circle(curr_frame, x0, y0, r);
 
     // save the current frame

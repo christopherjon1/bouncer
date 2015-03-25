@@ -264,7 +264,7 @@ int main(int argc, char** argv)
   }
 
   // decode the JPG image to an AVFrame and create a copy
-  const AVFrame *frame_copy;
+  AVFrame *frame_copy;
   AVFrame *curr_frame;
   frame_copy = open_image(filename);
   

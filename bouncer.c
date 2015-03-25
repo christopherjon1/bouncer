@@ -7,8 +7,6 @@
 #include <libavcodec/avcodec.h>
 #include <libswscale/swscale.h>
 
-// Begin Dranger
-// Ref: https://github.com/chelyaev/ffmpeg-tutorial/blob/master/tutorial01.c
 void save_frame(char *filename, AVFrame *pFrame) {
   FILE *f;
   AVCodec *avc;
@@ -26,6 +24,7 @@ void save_frame(char *filename, AVFrame *pFrame) {
   // get the codec context
   avctx = avcodec_alloc_context3(avc);
 
+  // set the pixel format and dimensions
   avctx->pix_fmt = PIX_FMT_RGB24;
   avctx->width = pFrame->width;
   avctx->height = pFrame->height;
@@ -37,7 +36,6 @@ void save_frame(char *filename, AVFrame *pFrame) {
   }
 
   // initialize a packet
- 
   av_init_packet(&pkt);
   pkt.data = NULL;
   pkt.size = 0;
@@ -56,6 +54,7 @@ void save_frame(char *filename, AVFrame *pFrame) {
     // write the packet data to the output file
     fwrite(pkt.data, 1, pkt.size, f);
   else {
+    // otherwise an error occured
     fprintf(stderr, "save_frame: Encoder didn't get any output.");
     exit(1);
   }
@@ -70,7 +69,6 @@ void save_frame(char *filename, AVFrame *pFrame) {
   // free the packet
   av_free_packet(&pkt);
 }
-// End Dranger
 
 // Begin Dranger
 // Ref: https://github.com/chelyaev/ffmpeg-tutorial/blob/master/tutorial01.c
@@ -114,7 +112,7 @@ AVFrame* open_image(const char* filename)
       videoStream=i;
       break;
     }
-
+  
   if(videoStream == -1) {
     fprintf(stderr, "Didn't find a video stream.\n");
     return NULL;
@@ -174,7 +172,7 @@ AVFrame* open_image(const char* filename)
       avcodec_decode_video2(pCodecCtx, pFrame, &frameFinished, &packet);
 
       if(frameFinished) {
-	// convert the image from its native format to RGB
+	// convert the image from its native format to RGB24
 	sws_scale(
 	   sws_ctx,
 	   (uint8_t const * const *)pFrame->data,
@@ -185,6 +183,7 @@ AVFrame* open_image(const char* filename)
 	   pFrameRGB->linesize
 	   );
 
+	// set the RGB frame dimensions and format
 	pFrameRGB->width = pCodecCtx->width;
 	pFrameRGB->height = pCodecCtx->height;
 	pFrameRGB->format = PIX_FMT_RGB24;
@@ -205,6 +204,7 @@ AVFrame* open_image(const char* filename)
   // close the video file
   avformat_close_input(&pFormatCtx);
 
+  // return the AVFrame to the caller
   return pFrameRGB;
 }
 // End Dranger
@@ -216,23 +216,36 @@ void draw_circle(AVFrame *frame, int x0, int y0, int r) {
     uint8_t red = 0; 
     uint8_t green = 0;
     uint8_t blue = 255;
+
+    // iterate over each pixel in the image
     for(y = 0; y < frame->height; y++) {
 	for(x = 0; x < frame->width; x++) {
-		ptr = frame->data[0] + y*frame->linesize[0] + x*3; // points to red
-		int d = (x-x0)*(x-x0) + (y-y0)*(y-y0);
-	   	if (d <= r*r) {
-		  // apply linear interpolation to create a blue->white
-		  // gradient
-		  double dist = sqrt(d);
-		  double perct = dist / (double) r;
-		  red = perct * 150;
-		  green = perct * 150;
+	  // get a pointer to the Red byte value for the current
+	  // pixel
+	  ptr = frame->data[0] + y*frame->linesize[0] + x*3; // points to red
+	  
+	  // apply pythagorean theorem to get the square of the distance
+	  // from the origin of the circle
+	  int d = (x-x0)*(x-x0) + (y-y0)*(y-y0);
 
-		  // copy the new RGB values into the frame
-		  *ptr = red;
-		  *(ptr+1) = green;
-		  *(ptr+2) = blue;
-     		}
+	  // if a^2 + b^2 <= r^2 then we are within the
+	  // circle
+	  if (d <= r*r) {
+	    // apply linear interpolation to create a blue->pink'ish
+	    // gradient
+	    double dist = sqrt(d);
+	    double perct = dist / (double) r;
+
+	    // the red and green values are a percentage of the distance 
+	    // from the origin to the outer edge of the circle
+	    red = perct * 150; // perct * 150 creates a blue->pink'ish grad
+	    green = perct * 150;
+
+	    // copy the new RGB values into the frame
+	    *ptr = red;
+	    *(ptr+1) = green;
+	    *(ptr+2) = blue;
+     	  }
 	}
    }
 }
@@ -275,21 +288,23 @@ int main(int argc, char** argv)
   curr_frame->format = frame_copy->format;
 
   int ret;
-  ret = av_image_alloc(curr_frame->data, curr_frame->linesize, curr_frame->width, curr_frame->height,  
-                        PIX_FMT_RGB24, 32);
+  ret = av_image_alloc(curr_frame->data, curr_frame->linesize, 
+		       curr_frame->width, curr_frame->height, PIX_FMT_RGB24, 32);
 
+  // check if a buffer could be allocated
   if (ret < 0) {
       fprintf(stderr, "Could not allocate raw picture buffer\n");
       exit(1);
   }
-
-  double height_mult[] = {0.9, 0.850, 0.825, 0.8, 0.750, 0.725, 0.7, 0.65, 
-			 0.625, 0.6, 0.625, 0.65, 0.7, 0.725, 0.75, 0.8, 
-			 0.825, 0.85, 0.9};
+  
+  // create an array of values to 
+  double height_mult[] = {0.9, 0.850, 0.825, 0.8, 0.750, 0.725, 0.7, 0.65, 0.625, 
+   			  0.6, 0.6, 0.625, 0.65, 0.7, 0.725, 0.75, 0.8, 0.825, 0.85, 0.9};
 
   // the ball size and location should be a percentage 
   // of the image dimensions
-  x0 = curr_frame->width / 2;
+  x0 = curr_frame->width / 2; // start the ball in the center
+  //y0 = curr_frame->height * 0.9; // start the ball at the bottom
   if (curr_frame->width < curr_frame->height)
     r = curr_frame->width * 0.10;
   else

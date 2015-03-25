@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-//#include <math.h>
+#include <math.h>
 #include <libavutil/frame.h>
 #include <libavutil/pixfmt.h>
 #include <libavformat/avformat.h>
@@ -204,19 +204,25 @@ AVFrame* open_image(const char* filename)
 
   return pFrameRGB;
 }
- 
-void draw_circle(AVFrame *frame, int x, int y, int r, int color) {
-  double angle, x1, y1;
-  
-  for(angle = 0; angle < 360; angle += 0.1) {
-    x1 = r * cos(angle * M_PI / 180);
-    y1 = r * sin(angle * M_PI / 180);
-    
-  }
 
-  // draw every pixel between x and x + x1 the color
-  // 'color'
-  draw_pixel(frame, x + x1, y + y1, color);
+void draw_circle(AVFrame *frame, int x0, int y0, int r) {
+    int x, y;
+    uint8_t *ptr;
+
+    uint8_t red = 255; 
+    uint8_t green = 255;
+    uint8_t blue = 255;
+    for(y = 0; y < frame->height; y++) {
+	for(x = 0; x < frame->width; x++) {
+		ptr = frame->data[0] + y*frame->linesize[0] + x*3; // points to red
+		if ((x-x0)^2 + (y-y0)^2 <= r^2) {
+			memset(ptr, red, 1);
+			memset(ptr+1, green, 1);
+			//memset(ptr+2, blue, 1);
+		}
+	}
+   }
+
 }
 
 // main entry point
@@ -265,21 +271,14 @@ int main(int argc, char** argv)
       exit(1);
   }
 
-  //printf("frame_copy->width %d\n", frame_copy->width);
-  //printf("frame_copy->height %d\n", frame_copy->height);
-
-  // copy the metadata and frame data
-  av_frame_copy(curr_frame, frame_copy);
-	
-  //printf("curr_frame->width %d\n", curr_frame->width);
-  //printf("curr_frame->height %d\n", curr_frame->height);
-
   // the ball size and location should be a percentage 
   // of the image dimensions
   x = curr_frame->width / 2;
-  y = curr_frame->height * curr_frame->linesize[0] / 3;
-  r = curr_frame->width * curr_frame->height * 0.1; // r = 10% of image space
-
+  y = curr_frame->height * curr_frame->width / 3;
+  r = 150;
+  printf("x0: %d\n", x);
+  printf("y0: %d\n", y);
+  printf("radius: %d\n", r);
   // create some color enums
   enum {BLACK=0x000000, WHITE=0xFFFFFF};
 
@@ -288,19 +287,17 @@ int main(int argc, char** argv)
   char frame_name[14];
   for(i = 0; i < 300; i++) {
     snprintf(frame_name, sizeof(char) * 14, "frame%03d.mpff", i);
-
+    
+    // copy the frame data
+    av_frame_copy(curr_frame, frame_copy);
+    
     // draw the circle to the frame
-    draw_circle(curr_frame, x, y, r, WHITE);
+    draw_circle(curr_frame, x, y, r);
 
     // save the current frame
     save_frame(frame_name, curr_frame);
 
-    // draw the ball upward for the first 150 frames and downward
-    // for the last 150 frames.
-    //if (i < 151)
-    //  y += grav;
-    //else
-    //  y -= grav;
+
   }
 
   // free the RGB buffer

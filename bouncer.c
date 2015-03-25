@@ -311,7 +311,7 @@ int main(int argc, char** argv)
   // the ball size and location should be a percentage 
   // of the image dimensions
   x0 = curr_frame->width / 2; // start the ball in the center
-  //y0 = curr_frame->height * 0.9; // start the ball at the bottom
+  y0 = curr_frame->height * 0.1; // start the ball at the top
   if (curr_frame->width < curr_frame->height)
     r = curr_frame->width * 0.10;
   else
@@ -320,6 +320,10 @@ int main(int argc, char** argv)
   // output 300 files (into the current working directory) 
   // containing the frames of the animation. 
   char frame_name[14];
+  double gravity = 0.1;
+  double speed = 0;
+  double gravity_2 = -0.75;
+
   for(i = 0; i < 300; i++) {
     snprintf(frame_name, sizeof(char) * 14, "frame%03d.mpff", i);
     
@@ -327,8 +331,18 @@ int main(int argc, char** argv)
     av_frame_copy(curr_frame, frame_copy);
     
     // draw the circle to the frame
-    int phase_size = sizeof(height_mult) / sizeof(height_mult[0]);
-    y0 = curr_frame->height * height_mult[i % phase_size];
+    //int phase_size = sizeof(height_mult) / sizeof(height_mult[0]);
+    //y0 = curr_frame->height * height_mult[i % phase_size];
+    // add tot the speed of the ball
+    y0 = y0 + speed;
+    speed = speed + gravity;
+
+    // Decrement gravity and add speed as the ball drops
+    if ( y0 > curr_frame->height - r) {
+	speed = speed * gravity_2;
+        gravity_2 = gravity_2 + 0.01 * gravity;
+    }
+
     draw_circle(curr_frame, x0, y0, r);
 
     // save the current frame

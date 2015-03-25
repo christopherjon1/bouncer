@@ -7,6 +7,7 @@
 #include <libavcodec/avcodec.h>
 #include <libswscale/swscale.h>
 
+// Begin Dranger
 // Ref: https://github.com/chelyaev/ffmpeg-tutorial/blob/master/tutorial01.c
 void save_frame(char *filename, AVFrame *pFrame) {
   FILE *f;
@@ -69,7 +70,9 @@ void save_frame(char *filename, AVFrame *pFrame) {
   // free the packet
   av_free_packet(&pkt);
 }
+// End Dranger
 
+// Begin Dranger
 // Ref: https://github.com/chelyaev/ffmpeg-tutorial/blob/master/tutorial01.c
 AVFrame* open_image(const char* filename)
 {
@@ -204,6 +207,7 @@ AVFrame* open_image(const char* filename)
 
   return pFrameRGB;
 }
+// End Dranger
 
 void draw_circle(AVFrame *frame, int x0, int y0, int r) {
     int x, y;
@@ -211,11 +215,18 @@ void draw_circle(AVFrame *frame, int x0, int y0, int r) {
 
     uint8_t red = 0; 
     uint8_t green = 0;
-    uint8_t blue = 0;
+    uint8_t blue = 255;
     for(y = 0; y < frame->height; y++) {
 	for(x = 0; x < frame->width; x++) {
 		ptr = frame->data[0] + y*frame->linesize[0] + x*3; // points to red
-		if ((x-x0)*(x-x0) + (y-y0)*(y-y0) <= r*r) {
+		int d = (x-x0)*(x-x0) + (y-y0)*(y-y0);
+	   	if (d <= r*r) {
+		  double dist = sqrt(d);
+		  double perct = dist / (double) r;
+		  printf("perct: %f\n", perct);
+		  red = perct * 255;
+		  green = perct * 255;
+		  printf("red: %d\tgreen: %d\n", red, green);
 		  *ptr = red;
 		  *(ptr+1) = green;
 		  *(ptr+2) = blue;
@@ -285,6 +296,7 @@ int main(int argc, char** argv)
   // output 300 files (into the current working directory) 
   // containing the frames of the animation. 
   char frame_name[14];
+  grav = 2;
   for(i = 0; i < 300; i++) {
     snprintf(frame_name, sizeof(char) * 14, "frame%03d.mpff", i);
     
@@ -297,12 +309,15 @@ int main(int argc, char** argv)
     // save the current frame
     save_frame(frame_name, curr_frame);
 
-
+    if (i < 150)
+      y0 += grav;
+    else
+      y0 -= grav;
   }
 
   // free the RGB buffer
-  //av_free(frame_copy);
-  //av_free(curr_frame);
+  av_free(frame_copy);
+  av_free(curr_frame);
 
   return 0;
 }

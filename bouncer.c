@@ -1,3 +1,10 @@
+/**
+ * Author: Jonathan Whitaker & Christopher Hartley
+ * Last modified: Wed March 25, 2015
+ * Name: bouncer.c
+ * CS 3505 Spring 2015
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <math.h>

@@ -209,26 +209,25 @@ void draw_circle(AVFrame *frame, int x0, int y0, int r) {
     int x, y;
     uint8_t *ptr;
 
-    uint8_t red = 255; 
-    uint8_t green = 255;
-    uint8_t blue = 255;
+    uint8_t red = 0; 
+    uint8_t green = 0;
+    uint8_t blue = 0;
     for(y = 0; y < frame->height; y++) {
 	for(x = 0; x < frame->width; x++) {
 		ptr = frame->data[0] + y*frame->linesize[0] + x*3; // points to red
-		if ((x-x0)^2 + (y-y0)^2 <= r^2) {
-			memset(ptr, red, 1);
-			memset(ptr+1, green, 1);
-			//memset(ptr+2, blue, 1);
-		}
+		if ((x-x0)*(x-x0) + (y-y0)*(y-y0) <= r*r) {
+		  *ptr = red;
+		  *(ptr+1) = green;
+		  *(ptr+2) = blue;
+     		}
 	}
    }
-
 }
 
 // main entry point
 int main(int argc, char** argv)
 {
-  int i, x, y, r, grav;
+  int i, x0, y0, r, grav;
 
   // the bouncer application should take a single command line argument.
   if (argc != 2) {
@@ -273,12 +272,13 @@ int main(int argc, char** argv)
 
   // the ball size and location should be a percentage 
   // of the image dimensions
-  x = curr_frame->width / 2;
-  y = curr_frame->height * curr_frame->width / 3;
-  r = 150;
-  printf("x0: %d\n", x);
-  printf("y0: %d\n", y);
-  printf("radius: %d\n", r);
+  x0 = curr_frame->width / 2;
+  y0 = curr_frame->height / 2;
+  if (curr_frame->width < curr_frame->height)
+    r = curr_frame->width * 0.10;
+  else
+    r = curr_frame->height * 0.10;
+
   // create some color enums
   enum {BLACK=0x000000, WHITE=0xFFFFFF};
 
@@ -292,7 +292,7 @@ int main(int argc, char** argv)
     av_frame_copy(curr_frame, frame_copy);
     
     // draw the circle to the frame
-    draw_circle(curr_frame, x, y, r);
+    draw_circle(curr_frame, x0, y0, r);
 
     // save the current frame
     save_frame(frame_name, curr_frame);

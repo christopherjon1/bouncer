@@ -260,7 +260,7 @@ void draw_circle(AVFrame *frame, int x0, int y0, int r) {
 // main entry point
 int main(int argc, char** argv)
 {
-  int i, x0, y0, r, grav;
+  int i, x0, y0, r;
 
   // the bouncer application should take a single command line argument.
   if (argc != 2) {
@@ -304,10 +304,6 @@ int main(int argc, char** argv)
       exit(1);
   }
   
-  // create an array of values to 
-  double height_mult[] = {0.9, 0.850, 0.825, 0.8, 0.750, 0.725, 0.7, 0.65, 0.625, 
-   			  0.6, 0.6, 0.625, 0.65, 0.7, 0.725, 0.75, 0.8, 0.825, 0.85, 0.9};
-
   // the ball size and location should be a percentage 
   // of the image dimensions
   x0 = curr_frame->width / 2; // start the ball in the center
@@ -330,19 +326,17 @@ int main(int argc, char** argv)
     // copy the frame data
     av_frame_copy(curr_frame, frame_copy);
     
-    // draw the circle to the frame
-    //int phase_size = sizeof(height_mult) / sizeof(height_mult[0]);
-    //y0 = curr_frame->height * height_mult[i % phase_size];
-    // add tot the speed of the ball
+    // add the the speed of the ball
     y0 = y0 + speed;
     speed = speed + gravity;
 
-    // Decrement gravity and add speed as the ball drops
+    // decrement gravity and add speed as the ball drops
     if ( y0 > curr_frame->height - r) {
 	speed = speed * gravity_2;
         gravity_2 = gravity_2 + 0.01 * gravity;
     }
 
+    // draw the circle to the frame
     draw_circle(curr_frame, x0, y0, r);
 
     // save the current frame
